@@ -29,12 +29,12 @@ jobs:
           token: ${{ github.token }}
           overwrite: false
 
-      - name: Push all new branches
-        if: ${{ steps.checkout-tags.outputs.up-to-date }}
-        run: |
-          while read branch; do
-            git push origin $branch
-          done <<< "${{ steps.checkout-tags.outputs.branches }}"
+      # - name: Push all new branches
+      #   if: ${{ steps.checkout-tags.outputs.up-to-date }}
+      #   run: |
+      #     while read branch; do
+      #       git push origin $branch
+      #     done <<< "${{ steps.checkout-tags.outputs.branches }}"
 
       #- name: Setup Go environment
        # if: ${{ ! steps.checkout-tags.outputs.up-to-date }}
