@@ -1,0 +1,106 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Update-cloudflared
+
+# Controls when the workflow will run
+on:
+  schedule:
+    - cron: '0 0 * * *'
+   # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+  push:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  check-update:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.cf }}
+
+      - name: Checkout new tags to branches
+        id: checkout-tags
+        uses: chachako/checkout-tags@v1
+        with:
+          base: cloudflare/cloudflared
+          token: ${{ secrets.cf }}
+          overwrite: false
+
+      - name: Push all new branches
+        if: ${{ steps.checkout-tags.outputs.up-to-date }}
+        run: |
+          while read branch; do
+            git push origin $branch
+          done <<< "${{ steps.checkout-tags.outputs.branches }}"
+
+      #- name: Setup Go environment
+       # if: ${{ ! steps.checkout-tags.outputs.up-to-date }}
+        #uses: actions/setup-go@v5.0.0
+      # Cache Go dependencies
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: build cf-go
+        if: ${{ steps.checkout-tags.outputs.up-to-date }}
+        run: |
+          git clone https://github.com/cloudflare/go --depth 1
+          cd go/src
+          ./make.bash
+          chmod +x ../bin/go
+
+      - name: build mipsle-cloudflared
+        if: ${{ steps.checkout-tags.outputs.up-to-date }}
+        run: |
+          cd /home/runner/work/cloudflared/cloudflared
+          git clone https://github.com/cloudflare/cloudflared --depth 1
+          cd cloudflared/cmd/cloudflared
+          CGO_ENABLED=0 GOOS=linux GOARCH=mipsle GOMIPS=softfloat /home/runner/work/cloudflared/cloudflared/go/bin/go build -a -trimpath -installsuffix cgo -ldflags '-s -w -extldflags "-static"' .
+          cd /home/runner/work/cloudflared/cloudflared
+
+      - uses: actions/upload-artifact@v4
+        with:
+          # Name of the artifact to upload.
+          # Optional. Default is 'artifact'
+          name: cloudflared
+
+          # A file, directory or wildcard pattern that describes what to upload
+          # Required.
+          path: /home/runner/work/cloudflared/cloudflared/cloudflared/cmd/cloudflared/cloudflared
+
+
+          # The level of compression for Zlib to be applied to the artifact archive.
+          # The value can range from 0 to 9.
+          # For large files that are not easily compressed, a value of 0 is recommended for significantly faster uploads.
+          # Optional. Default is '6'
+          compression-level: 0
+
+      - name: Get latest tag
+        id: latest_tag
+        uses: anothrNick/github-tag-action@1.35.0
+        env:
+          DEFAULT_BUMP: patch
+          WITH_V: true
+          DEFAULT_BRANCH: main
+          RELEASE_BRANCHES: main
+          GITHUB_TOKEN: ${{ secrets.cf }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: steps.latest_tag.outputs.new_tag
+        with:
+          make_latest: "true"
+          tag_name: ${{ steps.latest_tag.outputs.new_tag }}
+          files: /home/runner/work/cloudflared/cloudflared/cloudflared/cmd/cloudflared/cloudflared
+          token: ${{ github.token }}
+          fail_on_unmatched_files: false
+
+
