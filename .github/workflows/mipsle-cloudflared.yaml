@@ -43,7 +43,7 @@ jobs:
           git clone https://github.com/cloudflare/cloudflared --depth 1
           cd cloudflared/cmd/cloudflared
           targets=(
-            "aarch64_cortex-a53" "aarch64_cortex-a72" "aarch64_generic"
+            "arm64_cortex-a53" "arm64_cortex-a72" "arm64_generic"
             "arc_archs"
             "arm_arm1176jzf-s_vfp" "arm_arm926ej-s" "arm_cortex-a15_neon-vfpv4" "arm_cortex-a5_vfpv4"
             "arm_cortex-a7" "arm_cortex-a7_neon-vfpv4" "arm_cortex-a7_vfpv4" "arm_cortex-a8_vfpv3"
@@ -53,7 +53,7 @@ jobs:
             "mips_24kc" "mips_4kec" "mips_mips32"
             "mipsel_24kc" "mipsel_24kc_24kf" "mipsel_74kc" "mipsel_mips32"
             "powerpc_464fp" "powerpc_8540"
-            "x86_64"
+            "amd64"
           )
           for target in "${targets[@]}"; do
             IFS='_' read -ra parts <<< "$target"
@@ -65,8 +65,13 @@ jobs:
             elif [[ $GOARCH == "mips"* ]]; then
               GOMIPS="${parts[1]}"
             fi
-            CGO_ENABLED=0 GOOS=linux GOARCH=$GOARCH GOARM=$GOARM GOMIPS=$GOMIPS /home/runner/work/cloudflared/cloudflared/go/bin/go build -a -trimpath -installsuffix cgo -ldflags '-s -w -extldflags "-static"' -o cloudflared-$target
+            if go tool dist list | grep -q "linux/$GOARCH"; then
+              CGO_ENABLED=0 GOOS=linux GOARCH=$GOARCH GOARM=$GOARM GOMIPS=$GOMIPS /home/runner/work/cloudflared/cloudflared/go/bin/go build -a -trimpath -installsuffix cgo -ldflags '-s -w -extldflags "-static"' -o cloudflared-$target
+            else
+              echo "Skipping unsupported GOOS/GOARCH pair linux/$GOARCH"
+            fi
           done
+
 
       - uses: actions/upload-artifact@v4
         with:
