@@ -1,0 +1,89 @@
+name: Build-All
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+  push:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  check-update:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Checkout new tags to branches
+        id: checkout-tags
+        uses: chachako/checkout-tags@v1
+        with:
+          base: cloudflare/cloudflared
+          token: ${{ github.token }}
+          overwrite: false
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: build cf-go
+        if: ${{ steps.checkout-tags.outputs.up-to-date }}
+        run: |
+          git clone https://github.com/cloudflare/go --depth 1
+          cd go/src
+          ./make.bash
+          chmod +x ../bin/go
+
+      - name: build all-cloudflared
+        if: ${{ steps.checkout-tags.outputs.up-to-date }}
+        run: |
+          cd /home/runner/work/cloudflared/cloudflared
+          git clone https://github.com/cloudflare/cloudflared --depth 1
+          cd cloudflared/cmd/cloudflared
+          // run go tool dist list to get the list of supported architectures
+          # Get the list of supported architectures
+          supported_platforms=$(go tool dist list)
+
+          # Loop through each platform
+          for platform in $supported_platforms; do
+              # Extract GOOS and GOARCH from the platform string
+              IFS='/' read -ra parts <<< "$platform"
+              GOOS=${parts[0]}
+              GOARCH=${parts[1]}
+
+              # Build the binary
+              echo "Building for $GOOS/$GOARCH..."
+              CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH /home/runner/work/cloudflared/cloudflared/go/bin/go build -a -trimpath -installsuffix cgo -ldflags "-s -w -extldflags \"-static\"" .
+              mv cloudflared cloudflared-$GOOS-$GOARCH
+          done
+          cd /home/runner/work/cloudflared/cloudflared
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloudflared-all
+          path: /home/runner/work/cloudflared/cloudflared/cloudflared/cmd/cloudflared/cloudflared-*
+          compression-level: 0
+
+      - name: Get latest tag
+        id: latest_tag
+        uses: anothrNick/github-tag-action@1.35.0
+        env:
+          DEFAULT_BUMP: patch
+          WITH_V: true
+          DEFAULT_BRANCH: main
+          RELEASE_BRANCHES: main
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: steps.latest_tag.outputs.new_tag
+        with:
+          make_latest: "true"
+          tag_name: ${{ steps.latest_tag.outputs.new_tag }}
+          files: /home/runner/work/cloudflared/cloudflared/cloudflared/cmd/cloudflared/cloudflared-*
+          token: ${{ github.token }}
+          fail_on_unmatched_files: false
