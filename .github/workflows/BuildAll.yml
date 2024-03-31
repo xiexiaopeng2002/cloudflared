@@ -71,20 +71,16 @@ jobs:
               }
               # Compress the binary using UPX
               if [ "$GOOS" = "windows" ]; then
-                  upx cloudflared.exe -q  --best || {
-                      echo "Warning: UPX compression failed for $GOOS/$GOARCH" >&2
-                      continue
-                  }
                   binary_name="cloudflared-$GOOS-$GOARCH.exe"
                   mv cloudflared.exe "$binary_name"
               else
-                  upx cloudflared -q  --best || {
-                      echo "Warning: UPX compression failed for $GOOS/$GOARCH" >&2
-                      continue
-                  }
                   binary_name="cloudflared-$GOOS-$GOARCH"
                   mv cloudflared "$binary_name"
               fi
+              upx --best "$binary_name" -qq || {
+                      echo "Warning: UPX compression failed for $GOOS/$GOARCH" >&2
+                      continue
+              }
           done
 
           cd /home/runner/work/cloudflared/cloudflared
