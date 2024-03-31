@@ -7,7 +7,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  check-update:
+  Build-All:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -29,7 +29,10 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-
+      - name: Install UPX
+        uses: crazy-max/ghaction-upx@v3
+        with:
+          install-only: true
       - name: build cf-go
         if: ${{ steps.checkout-tags.outputs.up-to-date }}
         run: |
@@ -44,6 +47,7 @@ jobs:
           cd /home/runner/work/cloudflared/cloudflared
           git clone https://github.com/cloudflare/cloudflared --depth 1
           cd cloudflared/cmd/cloudflared
+
           # Get the list of supported architectures
           supported_platforms=$(go tool dist list)
 
@@ -56,9 +60,19 @@ jobs:
 
               # Build the binary
               echo "Building for $GOOS/$GOARCH..."
-              CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH /home/runner/work/cloudflared/cloudflared/go/bin/go build -a -trimpath -installsuffix cgo -ldflags "-s -w -extldflags \"-static\"" .
+              CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH /home/runner/work/cloudflared/cloudflared/go/bin/go build -a -trimpath -installsuffix cgo -ldflags "-s -w -extldflags \"-static\"" . || {
+                  echo "Warning: Build failed for $GOOS/$GOARCH" >&2
+                  continue
+              }
+
+              # Compress the binary using UPX
+              upx cloudflared || {
+                  echo "Warning: UPX compression failed for $GOOS/$GOARCH" >&2
+                  continue
+              }
               mv cloudflared cloudflared-$GOOS-$GOARCH
           done
+
           cd /home/runner/work/cloudflared/cloudflared
 
       - uses: actions/upload-artifact@v4
