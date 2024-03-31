@@ -15,6 +15,164 @@ jobs:
   check-update:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: aarch64
+            gomips: softfloat
+            goarm: ""
+            env: aarch64_cortex-a53
+          - goos: linux
+            goarch: aarch64
+            gomips: softfloat
+            goarm: ""
+            env: aarch64_cortex-a72
+          - goos: linux
+            goarch: aarch64
+            gomips: softfloat
+            goarm: ""
+            env: aarch64_generic
+          - goos: linux
+            goarch: arc
+            gomips: ""
+            goarm: ""
+            env: arc_archs
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 6
+            env: arm_arm1176jzf-s_vfp
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 926ej-s
+            env: arm_arm926ej-s
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 7
+            env: arm_cortex-a15_neon-vfpv4
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 5
+            env: arm_cortex-a5_vfpv4
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 7
+            env: arm_cortex-a7
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 7
+            env: arm_cortex-a7_neon-vfpv4
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 7
+            env: arm_cortex-a7_vfpv4
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 8
+            env: arm_cortex-a8_vfpv3
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 9
+            env: arm_cortex-a9
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 9
+            env: arm_cortex-a9_neon
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 9
+            env: arm_cortex-a9_vfpv3-d16
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 5
+            env: arm_fa526
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 4
+            env: arm_mpcore
+          - goos: linux
+            goarch: arm
+            gomips: ""
+            goarm: 5
+            env: arm_xscale
+          - goos: linux
+            goarch: i386
+            gomips: ""
+            goarm: ""
+            env: i386_pentium-mmx
+          - goos: linux
+            goarch: i386
+            gomips: ""
+            goarm: ""
+            env: i386_pentium4
+          - goos: linux
+            goarch: mips64
+            gomips: ""
+            goarm: ""
+            env: mips64_octeonplus
+          - goos: linux
+            goarch: mips
+            gomips: 24kc
+            goarm: ""
+            env: mips_24kc
+          - goos: linux
+            goarch: mips
+            gomips: 4kec
+            goarm: ""
+            env: mips_4kec
+          - goos: linux
+            goarch: mips
+            gomips: mips32
+            goarm: ""
+            env: mips_mips32
+          - goos: linux
+            goarch: mipsle
+            gomips: 24kc
+            goarm: ""
+            env: mipsel_24kc
+          - goos: linux
+            goarch: mipsle
+            gomips: 24kf
+            goarm: ""
+            env: mipsel_24kc_24kf
+          - goos: linux
+            goarch: mipsle
+            gomips: 74kc
+            goarm: ""
+            env: mipsel_74kc
+          - goos: linux
+            goarch: mipsle
+            gomips: mips32
+            goarm: ""
+            env: mipsel_mips32
+          - goos: linux
+            goarch: ppc64
+            gomips: ""
+            goarm: ""
+            env: powerpc_464fp
+          - goos: linux
+            goarch: ppc
+            gomips: ""
+            goarm: ""
+            env: powerpc_8540
+          - goos: linux
+            goarch: amd64
+            gomips: ""
+            goarm: ""
+            env: x86_64
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -64,164 +222,6 @@ jobs:
 
       - name: Build cloudflared
         if: ${{ steps.checkout-tags.outputs.up-to-date }}
-        strategy:
-          matrix:
-            include:
-              - goos: linux
-                goarch: aarch64
-                gomips: softfloat
-                goarm: ""
-                env: aarch64_cortex-a53
-              - goos: linux
-                goarch: aarch64
-                gomips: softfloat
-                goarm: ""
-                env: aarch64_cortex-a72
-              - goos: linux
-                goarch: aarch64
-                gomips: softfloat
-                goarm: ""
-                env: aarch64_generic
-              - goos: linux
-                goarch: arc
-                gomips: ""
-                goarm: ""
-                env: arc_archs
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 6
-                env: arm_arm1176jzf-s_vfp
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 926ej-s
-                env: arm_arm926ej-s
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 7
-                env: arm_cortex-a15_neon-vfpv4
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 5
-                env: arm_cortex-a5_vfpv4
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 7
-                env: arm_cortex-a7
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 7
-                env: arm_cortex-a7_neon-vfpv4
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 7
-                env: arm_cortex-a7_vfpv4
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 8
-                env: arm_cortex-a8_vfpv3
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 9
-                env: arm_cortex-a9
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 9
-                env: arm_cortex-a9_neon
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 9
-                env: arm_cortex-a9_vfpv3-d16
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 5
-                env: arm_fa526
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 4
-                env: arm_mpcore
-              - goos: linux
-                goarch: arm
-                gomips: ""
-                goarm: 5
-                env: arm_xscale
-              - goos: linux
-                goarch: i386
-                gomips: ""
-                goarm: ""
-                env: i386_pentium-mmx
-              - goos: linux
-                goarch: i386
-                gomips: ""
-                goarm: ""
-                env: i386_pentium4
-              - goos: linux
-                goarch: mips64
-                gomips: ""
-                goarm: ""
-                env: mips64_octeonplus
-              - goos: linux
-                goarch: mips
-                gomips: 24kc
-                goarm: ""
-                env: mips_24kc
-              - goos: linux
-                goarch: mips
-                gomips: 4kec
-                goarm: ""
-                env: mips_4kec
-              - goos: linux
-                goarch: mips
-                gomips: mips32
-                goarm: ""
-                env: mips_mips32
-              - goos: linux
-                goarch: mipsle
-                gomips: 24kc
-                goarm: ""
-                env: mipsel_24kc
-              - goos: linux
-                goarch: mipsle
-                gomips: 24kf
-                goarm: ""
-                env: mipsel_24kc_24kf
-              - goos: linux
-                goarch: mipsle
-                gomips: 74kc
-                goarm: ""
-                env: mipsel_74kc
-              - goos: linux
-                goarch: mipsle
-                gomips: mips32
-                goarm: ""
-                env: mipsel_mips32
-              - goos: linux
-                goarch: ppc64
-                gomips: ""
-                goarm: ""
-                env: powerpc_464fp
-              - goos: linux
-                goarch: ppc
-                gomips: ""
-                goarm: ""
-                env: powerpc_8540
-              - goos: linux
-                goarch: amd64
-                gomips: ""
-                goarm: ""
-                env: x86_64
         run: |
           cd /home/runner/work/cloudflared/cloudflared
           git clone https://github.com/cloudflare/cloudflared --depth 1
