@@ -50,27 +50,41 @@ jobs:
 
           # Get the list of supported architectures
           supported_platforms=$(go tool dist list)
-
           # Loop through each platform
           for platform in $supported_platforms; do
               # Extract GOOS and GOARCH from the platform string
               IFS='/' read -ra parts <<< "$platform"
               GOOS=${parts[0]}
               GOARCH=${parts[1]}
-
               # Build the binary
               echo "Building for $GOOS/$GOARCH..."
-              CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH /home/runner/work/cloudflared/cloudflared/go/bin/go build -a -trimpath -installsuffix cgo -ldflags "-s -w -extldflags \"-static\"" . || {
+              # Set CGO_ENABLED=1 for iOS and Android platforms
+              if [ "$GOOS" = "ios" ] || [ "$GOOS" = "android" ]; then
+                  CGO_ENABLED=1
+              else
+                  CGO_ENABLED=0
+              fi
+
+              GOOS=$GOOS GOARCH=$GOARCH /home/runner/work/cloudflared/cloudflared/go/bin/go build -a -trimpath -installsuffix cgo -ldflags "-s -w -extldflags \"-static\"" . || {
                   echo "Warning: Build failed for $GOOS/$GOARCH" >&2
                   continue
               }
-
               # Compress the binary using UPX
-              upx cloudflared || {
-                  echo "Warning: UPX compression failed for $GOOS/$GOARCH" >&2
-                  continue
-              }
-              mv cloudflared cloudflared-$GOOS-$GOARCH
+              if [ "$GOOS" = "windows" ]; then
+                  upx cloudflared.exe -q  --best || {
+                      echo "Warning: UPX compression failed for $GOOS/$GOARCH" >&2
+                      continue
+                  }
+                  binary_name="cloudflared-$GOOS-$GOARCH.exe"
+                  mv cloudflared.exe "$binary_name"
+              else
+                  upx cloudflared -q  --best || {
+                      echo "Warning: UPX compression failed for $GOOS/$GOARCH" >&2
+                      continue
+                  }
+                  binary_name="cloudflared-$GOOS-$GOARCH"
+                  mv cloudflared "$binary_name"
+              fi
           done
 
           cd /home/runner/work/cloudflared/cloudflared
