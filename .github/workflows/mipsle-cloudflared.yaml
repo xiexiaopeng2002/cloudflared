@@ -6,7 +6,7 @@ name: Update-cloudflared
 on:
   schedule:
     - cron: '0 0 * * 0'
-   # Allows you to run this workflow manually from the Actions tab
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
   # push:
 
@@ -29,16 +29,6 @@ jobs:
           token: ${{ github.token }}
           overwrite: false
 
-      # - name: Push all new branches
-      #   if: ${{ steps.checkout-tags.outputs.up-to-date }}
-      #   run: |
-      #     while read branch; do
-      #       git push origin $branch
-      #     done <<< "${{ steps.checkout-tags.outputs.branches }}"
-
-      #- name: Setup Go environment
-       # if: ${{ ! steps.checkout-tags.outputs.up-to-date }}
-        #uses: actions/setup-go@v5.0.0
       # Cache Go dependencies
       - name: Cache Go modules
         uses: actions/cache@v3
@@ -47,10 +37,27 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: build cf-go
-        if: ${{ steps.checkout-tags.outputs.up-to-date }}
+
+      # Get the last commit ID of cloudflare/go
+      - name: Get last commit ID of cloudflare/go
+        id: get_commit_id
         run: |
           git clone https://github.com/cloudflare/go --depth 1
+          commit_id=$(git -C go rev-parse HEAD)
+          echo "::set-output name=commit_id::$commit_id"
+
+      # Cache cf-go build result
+      - name: Cache cf-go build
+        uses: actions/cache@v3
+        with:
+          path: go/bin
+          key: ${{ runner.os }}-cf-go-${{ steps.get_commit_id.outputs.commit_id }}
+          restore-keys: |
+            ${{ runner.os }}-cf-go-
+
+      - name: Build cf-go
+        if: ${{ steps.checkout-tags.outputs.up-to-date && steps.cache-cf-go.outputs.cache-hit != 'true' }}
+        run: |
           cd go/src
           ./make.bash
           chmod +x ../bin/go
