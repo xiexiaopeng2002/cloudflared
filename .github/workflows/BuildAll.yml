@@ -65,7 +65,14 @@ jobs:
             else
               CGO_ENABLED=0
             fi
-            GOOS=$GOOS GOARCH=$GOARCH /home/runner/work/cloudflared/cloudflared/go/bin/go build -a -trimpath -installsuffix cgo -ldflags "-s -w -extldflags \"-static\"" . || {
+
+            # Set GOMIPS=softfloat for MIPS architectures
+            if [ "$GOARCH" = "mips" ] || [ "$GOARCH" = "mipsle" ]; then
+              GOMIPS=softfloat
+            else
+              GOMIPS=""
+            fi
+            GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=$CGO_ENABLED GOMIPS=$GOMIPS /home/runner/work/cloudflared/cloudflared/go/bin/go build -a -trimpath -installsuffix cgo -ldflags "-s -w -extldflags \"-static\"" . || {
               echo "Warning: Build failed for $GOOS/$GOARCH" >&2
               continue
             }
