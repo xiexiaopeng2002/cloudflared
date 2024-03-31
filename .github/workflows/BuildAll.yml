@@ -44,7 +44,6 @@ jobs:
           cd /home/runner/work/cloudflared/cloudflared
           git clone https://github.com/cloudflare/cloudflared --depth 1
           cd cloudflared/cmd/cloudflared
-          // run go tool dist list to get the list of supported architectures
           # Get the list of supported architectures
           supported_platforms=$(go tool dist list)
 
